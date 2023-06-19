@@ -29,7 +29,6 @@ class HomogenousDataModelXY():
         self.batch_size = batch_size
         self.max_radius = max_radius
         self.dset_iterator = self.make_dset_iterator()
-        self.optimizer = optimizer
         if model is not None:
             self.model = model
         else:
@@ -42,7 +41,7 @@ class HomogenousDataModelXY():
                                                                 init_value=1e-3,
                                                                 peak_value=1e-2,
                                                                 warmup_steps=5000,
-                                                                decay_steps=25_000,
+                                                                decay_steps=25000,
                                                                 end_value=1e-8,
                                                                 )
             
