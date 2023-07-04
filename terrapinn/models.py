@@ -1,27 +1,14 @@
 import haiku as hk
 import jax
 
-def default_radial_model(layers=(32,32), output=1):
-    def radial_model_fn(tr):
+def default_mlp_model(layers, activation_fn = jax.nn.swish, output = 1, output_bias = True):
+    def model_fn(x):
         model_list = []
         for layer in layers:
-            model_list += [hk.Linear(layer), jax.nn.swish]
+            model_list += [hk.Linear(layer), activation_fn]
         
-        model_list += [hk.Linear(output)]
+        model_list += [hk.Linear(output, with_bias=output_bias)]
         mlp = hk.Sequential(model_list)
-        return mlp(tr)
+        return mlp(x)
 
-    return hk.without_apply_rng(hk.transform(radial_model_fn))
-
-def default_2d_model():
-    def amp_tau_model_fn(txy):
-        mlp = hk.Sequential([
-        hk.Linear(64), jax.nn.swish,
-        hk.Linear(32), jax.nn.swish,
-        hk.Linear(32), jax.nn.swish,
-        hk.Linear(16), jax.nn.swish,
-        hk.Linear(4, with_bias=False), # output all a, t, r, dk components 
-        ])
-        return mlp(txy)
-
-    return hk.without_apply_rng(hk.transform(amp_tau_model_fn))
+    return hk.without_apply_rng(hk.transform(model_fn))
