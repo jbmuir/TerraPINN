@@ -18,7 +18,9 @@ class HeterogeneousXYModel():
                        hbatch_size = 10000,
                        epoch_iters = 300,
                        epochs = 50, 
-                       max_rad = 1.0):
+                       max_rad = 1.0,
+                       amp_scale=jnp.log(2), 
+                       tau_scale=jnp.log(2)):
         
         self.axi_model = axi_model
         self.axi_params = axi_params
@@ -28,6 +30,8 @@ class HeterogeneousXYModel():
         self.epoch_iters = epoch_iters
         self.epochs = epochs
         self.max_rad = max_rad
+        self.amp_scale = amp_scale
+        self.tau_scale = tau_scale
 
         if model is not None:
             self.model = model
@@ -61,12 +65,12 @@ class HeterogeneousXYModel():
     
         return hk.without_apply_rng(hk.transform(amp_tau_model_fn))
     
-    def model_eval(self, params, t, x, y, t1, sd, amp_scale=jnp.log(2), tau_scale=jnp.log(2)):
+    def model_eval(self, params, t, x, y, t1, sd):
         r = jnp.sqrt(jnp.square(x)+jnp.square(y)) # need to recalculate r for autodiff
         tr = jnp.hstack((t,r))
         txy = jnp.hstack((t,x,y))
         model_out = self.model.apply(params, txy)
-        amp_shift = jnp.exp(amp_scale*jax.nn.tanh(model_out[0])) # try to ban the zero-solution
+        amp_shift = jnp.exp(self.amp_scale*jax.nn.tanh(model_out[0])) # try to ban the zero-solution
         dtr = model_out[1:3]
         dk = jnp.exp(model_out[3])
         coord_shift = tr+dtr
@@ -76,18 +80,18 @@ class HeterogeneousXYModel():
         t2 = jax.nn.tanh(jax.nn.tanh(t/t1))
         return se+t2*amp_shift*self.axi_model.apply(self.axi_params, coord_shift_clamp)
 
-    def full_loss_fn(rad_params, amp_tau_params, t, x, y, u, amp_scale=jnp.log(2), tau_scale=jnp.log(2), weights=1):
-        fep = Partial(full_model_eval, rad_params, amp_tau_params, amp_scale=amp_scale, tau_scale=tau_scale)
+    def full_loss_fn(self, params, t, x, y, u, weights=1):
+        fep = Partial(self.model_eval, params)
         upred = jax.vmap(fep)(t, x, y)
         loss = jnp.mean(weights*jnp.square((upred-u)))/2
         return loss
 
-    def full_phys_loss_fn(rad_params, amp_tau_params, t, x, y, c, amp_scale=jnp.log(2), tau_scale=jnp.log(2), weights=1):
-        fep = Partial(full_model_eval, rad_params, amp_tau_params, amp_scale=amp_scale, tau_scale=tau_scale)
+    def full_phys_loss_fn(self, params, t, x, y, c, weights=1):
+        fep = Partial(self.model_eval, params)
         c2 = c**2
         upred_tt = jax.vmap(jax.jacrev(jax.jacrev(fep, argnums=0), argnums=0))(t,x,y).reshape(-1,1)
         upred_xx = jax.vmap(jax.jacrev(jax.jacrev(fep, argnums=1), argnums=1))(t,x,y).reshape(-1,1)
         upred_yy = jax.vmap(jax.jacrev(jax.jacrev(fep, argnums=2), argnums=2))(t,x,y).reshape(-1,1)
         res = upred_tt - c2*upred_xx - c2*upred_yy
         loss = jnp.mean(weights*jnp.square(res))/2
-        return loss, res
+        return (loss, res)
