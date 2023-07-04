@@ -8,7 +8,7 @@ def radial_model_eval(model, params, t, r, t1, sd):
     t2 = jax.nn.tanh(jax.nn.tanh(t/t1))
     return se+t2*nn
 
-def model_eval_2d(axi_model, axi_params, model, params, t, x, y, t1, sd, amp_scale=jnp.log(2)):
+def model_eval_2d(axi_model, axi_params, model, params, t, x, y, t1, sd, amp_scale=jnp.log(2), max_rad=1):
     r = jnp.sqrt(jnp.square(x)+jnp.square(y)) # need to recalculate r for autodiff
     tr = jnp.hstack((t,r))
     txy = jnp.hstack((t,x,y))
@@ -18,7 +18,7 @@ def model_eval_2d(axi_model, axi_params, model, params, t, x, y, t1, sd, amp_sca
     dk = jnp.exp(model_out[3])
     coord_shift = tr+dtr
     coord_shift.at[1].set(dk*coord_shift[1])
-    coord_shift_clamp = jax.lax.clamp(0.0, coord_shift, self.max_rad)
+    coord_shift_clamp = jax.lax.clamp(0.0, coord_shift, max_rad)
     se = jax.nn.sigmoid(5*(2-t/t1))*jnp.exp(-0.5*jnp.square(r/sd))
     t2 = jax.nn.tanh(jax.nn.tanh(t/t1))
     return se+t2*amp_shift*axi_model.apply(axi_params, coord_shift_clamp)

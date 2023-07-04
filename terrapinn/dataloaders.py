@@ -15,7 +15,7 @@ def weighted_dataloader(dset_rng_key, *data, weights=None, num_batches=30000, ba
 def kde_resampler(coords, weights, n_resample, bandwidth=0.2):
     kde = KernelDensity(kernel='tophat', bandwidth=bandwidth)
     transformed_coords = jnp.arctanh(coords)
-    transform_jacobian = jnp.sum(1/(1-jnp.square(coords)), axis=1)
+    transform_jacobian = jnp.prod(1/(1-jnp.square(coords)), axis=1)
     kde.fit(transformed_coords, sample_weight=weights/transform_jacobian)
     resampled_coords = kde.sample(n_resample)
     untransformed_resampled_coords = jnp.tanh(resampled_coords)
