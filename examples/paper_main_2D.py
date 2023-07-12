@@ -127,9 +127,9 @@ rm_rng_key = jax.random.PRNGKey(94899110)
 num_batches = 30000
 batch_size = 10000
 radial_iterator = weighted_dataloader(dset_rng_key, 
+                                      jnp.reshape(const_model_radial_data, (-1,1)), # observed data has to go first, then coords in order used by model
                                       jnp.reshape(tvv, (-1,1)), 
                                       jnp.reshape(rvv, (-1,1)), 
-                                      jnp.reshape(const_model_radial_data, (-1,1)) , 
                                       num_batches = num_batches+1, 
                                       batch_size = batch_size)
 dummy_t, dummy_r, dummy_u = next(radial_iterator)
@@ -149,7 +149,7 @@ radial_optimizer=optax.adabelief(learning_rate=radial_schedule)
 radial_params = train_to_data(init_radial_params, 
                               Partial(radial_model_eval, radial_model, t1=t1, sd=source_sd),
                               radial_optimizer, 
-                              u_loss_fn_1d, 
+                              u_loss_fn, 
                               radial_iterator, 
                               num_batches = num_batches)
 
