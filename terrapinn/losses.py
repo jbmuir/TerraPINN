@@ -9,7 +9,7 @@ def u_loss_fn(model_eval, params, u, *coords, weights=1):
     loss = jnp.mean(weights*jnp.square(res))/2
     return (loss, res)
 
-def phys_loss_fn_2d(model_eval, params, c2, *coords, weights=1):
+def phys_loss_fn_2d(model_eval, params, c2, *coords, weights=1): # order for physics loss is c2, reciever_coords, source_coords (source coords may be empty)
     fep = Partial(model_eval, params)
     upred_tt = jax.vmap(jax.hessian(fep, argnums=0))(*coords).reshape(-1,1)
     upred_xx = jax.vmap(jax.hessian(fep, argnums=1))(*coords).reshape(-1,1)

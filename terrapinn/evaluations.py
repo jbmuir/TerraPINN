@@ -8,7 +8,7 @@ def radial_model_eval(model, params, t, r, t1=1.0, sd=0.01):
     t2 = jax.nn.tanh(jax.nn.tanh(t/t1))
     return se+t2*nn
 
-def model_eval_2d(axi_model, axi_params, model, params, t, x, y, t1=1.0, sd=0.01, amp_scale=jnp.log(2), max_rad=1):
+def model_eval_2d(axi_model, axi_params, model, params, t, x, y, t1=1.0, sd=0.01, amp_scale=jnp.log(2), max_rad=1.0):
     r = jnp.sqrt(jnp.square(x)+jnp.square(y)) # need to recalculate r for autodiff
     tr = jnp.hstack((t,r))
     txy = jnp.hstack((t,x,y))

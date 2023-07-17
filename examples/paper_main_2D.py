@@ -122,8 +122,8 @@ tvv = tvv / rtscale
 rvv = rvv / rtscale
 dscale = jnp.std(const_model_radial_data)
 
-dset_rng_key = jax.random.PRNGKey(43771121)
-rm_rng_key = jax.random.PRNGKey(94899110)
+dset_rng_key = jax.random.PRNGKey(1)
+rm_rng_key = jax.random.PRNGKey(2)
 num_batches = 30000
 batch_size = 10000
 radial_iterator = weighted_dataloader(dset_rng_key, 
@@ -153,3 +153,12 @@ radial_params = train_to_data(init_radial_params,
                               radial_iterator, 
                               num_batches = num_batches)
 
+
+
+hbatch_size = 10000
+full_model = default_mlp_model((64,128,64,32), output=4, output_bias=False)
+fm_dset_rng_key = jax.random.PRNGKey(3)
+fm_rng_key = jax.random.PRNGKey(4)
+dummy_fm_coords = uniform_plus_kde_sampler(fm_dset_rng_key, 3, hbatch_size=hbatch_size)
+init_fm_params = full_model.init(fm_rng_key, dummy_fm_coords)
+fm_evaluate = Partial(model_eval_2d, radial_model, radial_params, full_model)
