@@ -2,3 +2,5 @@
 __pycache__/
 *.py[cod]
 examples/data/*
+fullmodels.py
+radialmodels.py

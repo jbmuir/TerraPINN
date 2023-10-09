@@ -31,6 +31,7 @@ def train_to_physics(rng_key, params, model_eval, optimizer, loss_fn, data_sampl
                      anneal_schedule = jnp.ones(100), 
                      bandwidth_schedule = 0.2*jnp.ones(100)):
     
+    assert epochs == len(anneal_schedule)
     epoch_loss_history = []
 
     if init_coords_and_weights != None:
