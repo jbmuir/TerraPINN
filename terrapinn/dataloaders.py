@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from sklearn.neighbors import KernelDensity
+import warnings
 
 
 def weighted_dataloader(rng_key, *data, weights=None, num_batches=30000, batch_size=10000):
@@ -21,7 +22,7 @@ def weighted_dataloader(rng_key, *data, weights=None, num_batches=30000, batch_s
 #     untransformed_resampled_coords = jnp.tanh(resampled_coords)
 #     return untransformed_resampled_coords
 
-def uniform_plus_kde_sampler(rng_key, ndims, weights=None, old_coords=None, hbatch_size=10000, bandwidth=0.2):
+def uniform_plus_kde_sampler(rng_key, ndims, weights=None, old_coords=None, hbatch_size=10000, bandwidth=0.5):
     rng_key_1, rng_key_2 = jax.random.split(rng_key)
     sample_half_1 = jax.random.uniform(rng_key_1, (hbatch_size, ndims), minval=-1.0, maxval=1.0)
     if weights == None:
@@ -42,8 +43,6 @@ def uniform_plus_kde_sampler(rng_key, ndims, weights=None, old_coords=None, hbat
         samples = jnp.vstack((sample_half_1, sample_half_2))
         sample_log_probability = kde.score_samples(jnp.arctanh(samples)) - jnp.sum(jnp.log((1-jnp.square(samples))), axis=1) + jnp.log(2) # multiply by transform jacobian to get probability in original space, log(2) factor comes from transforming time from [0,1] to [-1,1]
         #transform time coordinate from [-1,1] to [0,1]     
-        samples = samples.at[:,0].add(1.0)
-        samples = samples.at[:,1].divide(2.0)
         uniform_inverse_density = 2*(ndims-1)
         sample_probability_weight = 1/(0.5+0.5*uniform_inverse_density*jnp.exp(sample_log_probability)) 
     

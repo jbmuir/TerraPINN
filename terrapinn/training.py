@@ -60,7 +60,7 @@ def train_to_physics(rng_key, params, model_eval, optimizer, loss_fn, data_sampl
             bml = jnp.mean(jnp.array(batch_loss_history))
             epoch_loss_history += [bml]
             epochiter.set_postfix(mean_loss=bml) 
-            coords, colloc_weights = data_sampler(rng_key, ndims, weights=sres.flatten(), old_coords=coords, hbatch_size=hbatch_size, bandwidth=float(bandwidth_schedule[i]))
+            coords, colloc_weights = data_sampler(rng_key, ndims, weights=jnp.sqrt(sres.flatten()), old_coords=coords, hbatch_size=hbatch_size, bandwidth=float(bandwidth_schedule[i]))
             c2 = c2_eval(jnp.hstack(coords[1:]), anneal_schedule[min(i,epochs-1)]).reshape(-1,1)
 
     

@@ -124,8 +124,8 @@ dscale = jnp.std(const_model_radial_data)
 
 dset_rng_key = jax.random.PRNGKey(1)
 rm_rng_key = jax.random.PRNGKey(2)
-num_batches = 30000
-batch_size = 10000
+num_batches = 100000
+batch_size = 2000
 radial_iterator = weighted_dataloader(dset_rng_key, 
                                       jnp.reshape(const_model_radial_data, (-1,1)), # observed data has to go first, then coords in order used by model
                                       jnp.reshape(tvv, (-1,1)), 
@@ -133,7 +133,7 @@ radial_iterator = weighted_dataloader(dset_rng_key,
                                       num_batches = num_batches+1, 
                                       batch_size = batch_size)
 dummy_t, dummy_r, dummy_u = next(radial_iterator)
-radial_model = default_mlp_model((32,32))
+radial_model = default_mlp_model((64,64))
 init_radial_params = radial_model.init(rm_rng_key, jnp.hstack((dummy_t, dummy_r)))
 
 radial_schedule = optax.warmup_cosine_decay_schedule(
@@ -155,13 +155,15 @@ radial_params = train_to_data(init_radial_params,
 
 
 
-hbatch_size = 10000
-full_model = default_mlp_model((64,128,64,32), output=4, output_bias=False)
+hbatch_size = 25000
+full_model = default_mlp_model((64,64,64,64), output=4, output_bias=False)
 fm_dset_rng_key = jax.random.PRNGKey(3)
 fm_rng_key = jax.random.PRNGKey(4)
 dummy_fm_coords, dummy_fm_weights = uniform_plus_kde_sampler(fm_dset_rng_key, 3, hbatch_size=hbatch_size)
 init_fm_params = full_model.init(fm_rng_key, jnp.hstack(dummy_fm_coords))
-init_fm_params= scale_param(init_fm_params, 1e-4)
+init_fm_params= scale_param(init_fm_params, 1e-2)
 fm_evaluate = Partial(model_eval_2d, radial_model, radial_params, full_model, t1=t1, sd=source_sd)
-fm_optimizer = optax.adabelief(learning_rate=3e-4)
-anneal_params = train_to_physics(fm_rng_key, init_fm_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, uniform_plus_kde_sampler,jvgaussian_c, anneal_schedule=jnp.linspace(0,1,100))
+fm_optimizer = optax.lion(learning_rate=1e-4)
+(anneal_params, epoch_loss_history, coords, colloc_weights) = train_to_physics(fm_rng_key, init_fm_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, uniform_plus_kde_sampler,jvgaussian_c, anneal_schedule=jnp.linspace(0.01,1,100))
+
+(anneal_params2, epoch_loss_history2, coords2, colloc_weights2) = train_to_physics(fm_rng_key, init_fm_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, uniform_plus_kde_sampler,jvgaussian_c, anneal_schedule=0.01*jnp.ones(1),epochs=1)
