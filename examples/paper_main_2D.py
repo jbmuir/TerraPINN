@@ -181,27 +181,29 @@ fig.show()
 
 
 hbatch_size = 25000
-full_model = default_mlp_model((64,32,32,16), output=4, output_bias=False)
-fm_evaluate = Partial(model_eval_2d, radial_model, radial_params, full_model, t1=t1, sd=2*source_sd)
+full_model = default_mlp_model((32,32,32,64), output=4, output_bias=False)
+fm_evaluate = Partial(model_eval_2d, radial_model, radial_params, full_model, t1=t1, sd=source_sd)
+# fm_evaluate = Partial(model_eval_2d, radial_model, radial_params, full_model, t1=t1, sd=2*source_sd)
+
 
 if retrain_full:
-    fm_optimizer = optax.lion(learning_rate=1e-4)
-    fm_dset_rng_key = jax.random.PRNGKey(3)
-    fm_rng_key = jax.random.PRNGKey(4)
+    fm_optimizer = optax.adabelief(learning_rate=1e-4)
+    fm_dset_rng_key = jax.random.PRNGKey(30)
+    fm_rng_key = jax.random.PRNGKey(40)
     resampler = Partial(uniform_plus_kde_sampler, sd=2*source_sd, bandwidth=0.1)
     dummy_fm_coords, dummy_fm_weights = resampler(fm_dset_rng_key, 3, hbatch_size=hbatch_size)
     init_fm_params = full_model.init(fm_rng_key, jnp.hstack(dummy_fm_coords))
     init_fm_params= scale_param(init_fm_params,1)
-    train_output = train_to_physics(fm_rng_key, init_fm_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, resampler, jvgaussian_c, anneal_schedule=jnp.hstack((jnp.linspace(0.01,1,100), jnp.ones(50))), epochs=150)
+    train_output = train_to_physics(fm_rng_key, init_fm_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, resampler, jvgaussian_c, anneal_schedule=jnp.hstack((jnp.linspace(0.01,1,50), jnp.ones(25))), epochs=75)
     with open("data/hetero_train_output2d.pickle", 'wb') as file:
         pickle.dump(train_output, file)
 
-    fm_optimizer = optax.lion(learning_rate=3e-4)
+    fm_optimizer = optax.adabelief(learning_rate=3e-4)
     (anneal_params, epoch_loss_history, coords, colloc_weights) = train_output
-    fm_dset_rng_key = jax.random.PRNGKey(5)
-    fm_rng_key = jax.random.PRNGKey(6)
+    fm_dset_rng_key = jax.random.PRNGKey(50)
+    fm_rng_key = jax.random.PRNGKey(60)
     resampler = Partial(uniform_plus_kde_sampler, sd=2*source_sd, bandwidth=0.02)
-    train_output = train_to_physics(fm_rng_key, anneal_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, resampler, jvgaussian_c, anneal_schedule=np.ones(50), epochs=50)
+    train_output = train_to_physics(fm_rng_key, anneal_params, fm_evaluate, fm_optimizer, phys_loss_fn_2d, resampler, jvgaussian_c, anneal_schedule=np.ones(25), epochs=25)
     with open("data/hetero_train_output2d_2.pickle", 'wb') as file:
         pickle.dump(train_output, file)
 

@@ -38,6 +38,8 @@ def train_to_physics(rng_key, params, model_eval, optimizer, loss_fn, data_sampl
         coords, colloc_weights = init_coords_and_weights
     else:
         coords, colloc_weights = data_sampler(rng_key, ndims, hbatch_size=hbatch_size, bandwidth=bandwidth_schedule[0])
+        r = jnp.sqrt(jnp.square(coords[1])+jnp.square(coords[2]))
+        colloc_weights = colloc_weights*r # correct weights for amplitude decay (roughly)
 
     c2 = c2_eval(jnp.hstack(coords[1:]), anneal_schedule[0]).reshape(-1,1)
     
@@ -62,6 +64,8 @@ def train_to_physics(rng_key, params, model_eval, optimizer, loss_fn, data_sampl
             epoch_loss_history += [bml]
             epochiter.set_postfix(mean_loss=bml) 
             coords, colloc_weights = data_sampler(rng_key, ndims, weights=jnp.sqrt(sres.flatten()), old_coords=coords, hbatch_size=hbatch_size, bandwidth=float(bandwidth_schedule[i]))
+            r = jnp.sqrt(jnp.square(coords[1])+jnp.square(coords[2]))
+            colloc_weights = colloc_weights*r
             c2 = c2_eval(jnp.hstack(coords[1:]), anneal_schedule[min(i,epochs-1)]).reshape(-1,1)
 
     
